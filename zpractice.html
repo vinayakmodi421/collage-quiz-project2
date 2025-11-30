@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mini Quiz App (HTML/CSS/JS)</title>
+  <style>
+    :root{--bg:#f6f7fb;--card:#ffffff;--accent:#4f46e5;--muted:#6b7280}
+    *{box-sizing:border-box}
+    body{font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;margin:0;background:linear-gradient(180deg,#eef2ff 0%, #f6f7fb 100%);color:#111}
+    .container{max-width:980px;margin:28px auto;padding:18px}
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+    header h1{font-size:20px;margin:0}
+    .tabs{display:flex;gap:8px}
+    .tab{background:var(--card);padding:8px 12px;border-radius:8px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,0.04)}
+    .tab.active{border:2px solid var(--accent);font-weight:600}
+    .card{background:var(--card);border-radius:12px;padding:18px;box-shadow:0 6px 18px rgba(15,23,42,0.06);margin-bottom:18px}
+    .row{display:flex;gap:12px}
+    .controls{display:flex;gap:8px;align-items:center}
+    .btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.secondary{background:transparent;color:var(--accent);border:1px solid rgba(79,70,229,0.12)}
+    .muted{color:var(--muted)}
+    /* Quiz UI */
+    .question{font-size:18px;margin-bottom:12px}
+    .options{display:flex;flex-direction:column;gap:8px}
+    .option{background:#f8fafc;padding:10px;border-radius:8px;border:1px solid transparent;cursor:pointer}
+    .option.selected{border-color:var(--accent);background:rgba(79,70,229,0.06)}
+    .option.correct{background:#ecfdf5;border-color:#10b981}
+    .option.wrong{background:#fff1f2;border-color:#ef4444}
+    .meta{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+    input,textarea,select{padding:8px;border-radius:8px;border:1px solid #e6e9ef;width:100%;}
+    label{display:block;margin-bottom:6px;font-weight:600}
+    .flex{display:flex;gap:12px}
+    .small{font-size:13px}
+    footer{font-size:13px;color:var(--muted);text-align:center;margin-top:22px}
+    /* responsive */
+    @media (max-width:600px){.row{flex-direction:column}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Mini Quiz App — No Backend (HTML/CSS/JS)</h1>
+      <div class="tabs" role="tablist">
+        <div class="tab active" data-tab="take">Take Quiz</div>
+        <div class="tab" data-tab="manage">Manage Questions</div>
+        <div class="tab" data-tab="scores">Scores</div>
+      </div>
+    </header>
+
+    <main>
+      <!-- TAKE QUIZ -->
+      <section id="take" class="card" aria-hidden="false">
+        <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="controls">
+            <label class="small" for="numQuestions">Questions:</label>
+            <select id="numQuestions" style="width:84px">
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="15">15</option>
+            </select>
+            <label class="small" for="quizTime">Time (sec):</label>
+            <input id="quizTime" type="number" value="120" style="width:100px" min="10" />
+            <button id="startBtn" class="btn">Start Quiz</button>
+          </div>
+          <div class="muted small">Questions are stored in your browser (localStorage).</div>
+        </div>
+
+        <div id="quizArea" style="display:none">
+          <div class="meta"><div id="progress">Question 1 / 10</div><div id="timer">Time left: 02:00</div></div>
+          <div style="margin-top:12px">
+            <div id="qText" class="question">Question text will appear here</div>
+            <div id="options" class="options"></div>
+            <div class="meta">
+              <div class="small muted">Select an option and click Next.</div>
+              <div>
+                <button id="prevBtn" class="btn secondary">Previous</button>
+                <button id="nextBtn" class="btn">Next</button>
+                <button id="submitBtn" class="btn" style="display:none;background:#059669">Submit</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="resultArea" style="display:none;margin-top:12px"></div>
+      </section>
+
+      <!-- MANAGE QUESTIONS -->
+      <section id="manage" class="card" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="muted small">Create, edit, and delete questions. Changes are saved in localStorage.</div>
+          <div class="flex">
+            <button id="exportBtn" class="btn secondary">Export JSON</button>
+            <button id="importBtn" class="btn">Import JSON</button>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 320px;gap:12px">
+          <div>
+            <div id="questionList"></div>
+          </div>
+          <div>
+            <h3 style="margin-top:0">Add / Edit Question</h3>
+            <form id="qForm">
+              <input type="hidden" id="qId">
+              <label>Question</label>
+              <textarea id="qQuestion" rows="3" required></textarea>
+              <label>Options (one per line)</label>
+              <textarea id="qOptions" rows="4" placeholder="Option A\nOption B\nOption C\nOption D" required></textarea>
+              <label>Correct Option (0-based index)</label>
+              <input id="qCorrect" type="number" min="0" value="0" required>
+              <div style="margin-top:8px;display:flex;gap:8px">
+                <button type="submit" class="btn">Save</button>
+                <button id="qClear" type="button" class="btn secondary">Clear</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCORES -->
+      <section id="scores" class="card" style="display:none">
+        <h3 style="margin-top:0">Previous Attempts</h3>
+        <div id="scoresList" class="muted small"></div>
+        <div style="margin-top:12px">
+          <button id="clearScores" class="btn secondary">Clear Scores</button>
+        </div>
+      </section>
+
+    </main>
+    <footer>Built with plain HTML, CSS & JavaScript • Data persisted locally using localStorage</footer>
+  </div>
+
+  <script>
+    // --- Data layer (localStorage) ---
+    const LS_Q = 'mini_quiz_questions_v1';
+    const LS_S = 'mini_quiz_scores_v1';
+
+    const defaultQuestions = [
+      {id:1,question:'What is the output of 2 + 3 * 4?',options:['20','14','10','None of these'],answer:1},
+      {id:2,question:'Which language runs in a web browser?',options:['Python','C++','JavaScript','Java'],answer:2},
+      {id:3,question:'HTML stands for?',options:['Hyper Text Markup Language','High Text Markup Language','Hyperlinks and Text Markup Language','None'],answer:0},
+      {id:4,question:'CSS is used for?',options:['Styling web pages','Storing data','Server-side logic','None'],answer:0},
+      {id:5,question:'Which box model property adds space inside an element?',options:['Margin','Border','Padding','Width'],answer:2}
+    ];
+
+    function loadQuestions(){
+      try{
+        const raw = localStorage.getItem(LS_Q);
+        if(!raw) { localStorage.setItem(LS_Q, JSON.stringify(defaultQuestions)); return defaultQuestions.slice(); }
+        return JSON.parse(raw);
+      }catch(e){ console.error(e); return defaultQuestions.slice(); }
+    }
+    function saveQuestions(list){ localStorage.setItem(LS_Q, JSON.stringify(list)); }
+
+    function loadScores(){ try{ return JSON.parse(localStorage.getItem(LS_S) || '[]'); }catch(e){return []} }
+    function saveScores(list){ localStorage.setItem(LS_S, JSON.stringify(list)); }
+
+    // --- UI wiring ---
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(t=>t.addEventListener('click', ()=>{ document.querySelectorAll('section.card').forEach(s=>s.style.display='none'); document.querySelector(`#${t.dataset.tab}`).style.display='block'; tabs.forEach(x=>x.classList.remove('active')); t.classList.add('active'); }))
+
+    // Manage Questions UI
+    const qListEl = document.getElementById('questionList');
+    const qForm = document.getElementById('qForm');
+    const qId = document.getElementById('qId');
+    const qQuestion = document.getElementById('qQuestion');
+    const qOptions = document.getElementById('qOptions');
+    const qCorrect = document.getElementById('qCorrect');
+    const qClear = document.getElementById('qClear');
+    const exportBtn = document.getElementById('exportBtn');
+    const importBtn = document.getElementById('importBtn');
+
+    function renderQuestionList(){
+      const qs = loadQuestions();
+      if(qs.length===0){ qListEl.innerHTML = '<div class="muted">No questions. Add some on the right.</div>'; return; }
+      qListEl.innerHTML = '';
+      qs.forEach(q=>{
+        const div = document.createElement('div'); div.className='card'; div.style.marginBottom='10px';
+        div.innerHTML = `<strong>Q${q.id}.</strong> ${escapeHtml(q.question)}<div class="small muted" style="margin-top:6px">${q.options.map((o,i)=>`${i+1}. ${escapeHtml(o)}`).join(' • ')}</div><div style="margin-top:8px;display:flex;gap:8px"><button data-id="${q.id}" class="btn edit">Edit</button><button data-id="${q.id}" class="btn secondary del">Delete</button></div>`;
+        qListEl.appendChild(div);
+      });
+      // attach handlers
+      qListEl.querySelectorAll('.edit').forEach(b=>b.addEventListener('click',()=>{
+        const id = Number(b.dataset.id); const qs = loadQuestions(); const item = qs.find(x=>x.id===id);
+        if(!item) return;
+        qId.value = item.id; qQuestion.value = item.question; qOptions.value = item.options.join('\n'); qCorrect.value = item.answer;
+      }));
+      qListEl.querySelectorAll('.del').forEach(b=>b.addEventListener('click',()=>{
+        if(!confirm('Delete this question?')) return; const id = Number(b.dataset.id); let qs = loadQuestions(); qs = qs.filter(x=>x.id!==id); saveQuestions(qs); renderQuestionList();
+      }));
+    }
+
+    qForm.addEventListener('submit', e=>{
+      e.preventDefault(); const qs = loadQuestions(); const idVal = qId.value?Number(qId.value):null;
+      const optionsArr = qOptions.value.split('\n').map(s=>s.trim()).filter(Boolean);
+      if(optionsArr.length<2){ alert('Provide at least 2 options'); return; }
+      const newItem = { id: idVal || (Date.now()%100000), question: qQuestion.value.trim(), options: optionsArr, answer: Math.max(0,Math.min(optionsArr.length-1,Number(qCorrect.value||0))) };
+      if(idVal){ const idx = qs.findIndex(x=>x.id===idVal); if(idx!==-1) qs[idx]=newItem; else qs.push(newItem); }
+      else qs.push(newItem);
+      saveQuestions(qs); qForm.reset(); qId.value=''; renderQuestionList();
+    });
+    qClear.addEventListener('click', ()=>{ qForm.reset(); qId.value=''; });
+
+    exportBtn.addEventListener('click', ()=>{
+      const data = localStorage.getItem(LS_Q) || '[]'; const blob = new Blob([data],{type:'application/json'}); const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='quiz-questions.json'; a.click(); URL.revokeObjectURL(url);
+    });
+    importBtn.addEventListener('click', ()=>{
+      const input = document.createElement('input'); input.type='file'; input.accept='application/json'; input.onchange = ()=>{
+        const f = input.files[0]; if(!f) return; const r = new FileReader(); r.onload = ()=>{ try{ const arr = JSON.parse(r.result); if(!Array.isArray(arr)) throw new Error('Invalid format'); saveQuestions(arr); renderQuestionList(); alert('Imported.'); }catch(err){alert('Invalid file.');} }; r.readAsText(f);
+      }; input.click();
+    });
+
+    // Escape helper
+    function escapeHtml(s){ return (s+'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#039;"})[c]); }
+
+    // --- Quiz logic ---
+    const startBtn = document.getElementById('startBtn');
+    const quizArea = document.getElementById('quizArea');
+    const qText = document.getElementById('qText');
+    const optionsEl = document.getElementById('options');
+    const progressEl = document.getElementById('progress');
+    const timerEl = document.getElementById('timer');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const resultArea = document.getElementById('resultArea');
+
+    let quizState = null; // {questions:[],answers:[],current:0,timeLeft,interval}
+
+    startBtn.addEventListener('click', ()=>{
+      const requested = Number(document.getElementById('numQuestions').value);
+      const timeSec = Math.max(10, Number(document.getElementById('quizTime').value) || 120);
+      const pool = loadQuestions(); if(pool.length===0){ alert('No questions available. Add some in Manage Questions.'); return; }
+      const pick = shuffle(pool.slice()).slice(0, Math.min(requested, pool.length)).map(q=>structuredClone(q));
+      quizState = {questions:pick,answers:Array(pick.length).fill(null),current:0,timeLeft:timeSec,interval:null,startedAt:Date.now()};
+      renderQuestion(); quizArea.style.display='block'; resultArea.style.display='none'; startTimer(); updateButtons();
+    });
+
+    function startTimer(){ if(quizState.interval) clearInterval(quizState.interval); timerEl.textContent = formatTime(quizState.timeLeft); quizState.interval = setInterval(()=>{
+      quizState.timeLeft--; if(quizState.timeLeft<=0){ clearInterval(quizState.interval); finishQuiz(); } else timerEl.textContent = 'Time left: '+formatTime(quizState.timeLeft);
+    },1000); }
+    function formatTime(s){ const m = Math.floor(s/60); const sec = s%60; return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}` }
+
+    function renderQuestion(){ const q = quizState.questions[quizState.current]; qText.innerHTML = escapeHtml(q.question); optionsEl.innerHTML=''; q.options.forEach((opt,i)=>{
+      const d = document.createElement('div'); d.className='option'; d.tabIndex=0; d.dataset.idx=i; d.innerHTML = `<div>${String.fromCharCode(65+i)}. ${escapeHtml(opt)}</div>`;
+      if(quizState.answers[quizState.current]===i) d.classList.add('selected');
+      d.addEventListener('click', ()=>{ quizState.answers[quizState.current]=i; renderQuestion(); });
+      d.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' ') { e.preventDefault(); d.click(); } });
+      optionsEl.appendChild(d);
+    });
+    progressEl.textContent = `Question ${quizState.current+1} / ${quizState.questions.length}`; updateButtons(); }
+
+    prevBtn.addEventListener('click', ()=>{ if(!quizState) return; if(quizState.current>0) { quizState.current--; renderQuestion(); } });
+    nextBtn.addEventListener('click', ()=>{ if(!quizState) return; if(quizState.current < quizState.questions.length-1) { quizState.current++; renderQuestion(); } });
+
+    function updateButtons(){ if(!quizState) return; prevBtn.disabled = quizState.current===0; nextBtn.style.display = quizState.current===quizState.questions.length-1 ? 'none' : 'inline-block'; submitBtn.style.display = quizState.current===quizState.questions.length-1 ? 'inline-block' : 'none'; }
+
+    submitBtn.addEventListener('click', ()=>{ if(!quizState) return; if(!confirm('Submit quiz?')) return; finishQuiz(); });
+
+    function finishQuiz(){ if(quizState.interval) clearInterval(quizState.interval); // grade
+      const questions = quizState.questions; const answers = quizState.answers; let correct=0; const details=[];
+      questions.forEach((q,i)=>{ const ok = answers[i]===q.answer; if(ok) correct++; details.push({question:q.question,selected:answers[i],answer:q.answer,options:q.options}); });
+      const score = Math.round((correct/questions.length)*100);
+      // save attempt
+      const scores = loadScores(); scores.unshift({date:new Date().toISOString(),correct, total:questions.length,score,details}); saveScores(scores);
+      // show result
+      showResult({correct,total:questions.length,score,details}); quizArea.style.display='none'; quizState=null; renderScores(); }
+
+    function showResult(res){ resultArea.style.display='block'; resultArea.innerHTML = `<div class="card"><h3>Your score: ${res.score}% (${res.correct}/${res.total})</h3><div style="margin-top:8px"><button id="reviewBtn" class="btn">Review Answers</button> <button id="doneBtn" class="btn secondary">Close</button></div></div>`;
+      document.getElementById('reviewBtn').addEventListener('click', ()=>{ renderReview(res.details); });
+      document.getElementById('doneBtn').addEventListener('click', ()=>{ resultArea.style.display='none'; }); }
+
+    function renderReview(details){ resultArea.style.display='block'; resultArea.innerHTML = '<div class="card"><h3>Review</h3>' + details.map((d,i)=>{
+      return `<div style="margin-top:10px"><div><strong>Q${i+1}.</strong> ${escapeHtml(d.question)}</div>` + d.options.map((o,idx)=>{
+        const cls = idx===d.answer? 'correct' : (idx===d.selected && idx!==d.answer ? 'wrong' : '');
+        return `<div class="option ${cls}" style="margin-top:6px">${String.fromCharCode(65+idx)}. ${escapeHtml(o)}</div>`;
+      }).join('') + '</div>';
+    }).join('') + '<div style="margin-top:12px"><button id="closeReview" class="btn secondary">Close</button></div></div>';
+      document.getElementById('closeReview').addEventListener('click', ()=>{ resultArea.style.display='none'; }); }
+
+    // Scores UI
+    const scoresList = document.getElementById('scoresList'); const clearScores = document.getElementById('clearScores');
+    function renderScores(){ const s = loadScores(); if(!s || s.length===0){ scoresList.innerHTML='<div class="muted">No attempts yet.</div>'; return; }
+      scoresList.innerHTML = s.map((it,idx)=>{
+        const date = new Date(it.date); return `<div class="card" style="margin-bottom:8px;padding:12px"><strong>${it.score}%</strong> — ${it.correct}/${it.total} &nbsp; <span class="muted small">(${date.toLocaleString()})</span> <div style="margin-top:8px"><button data-idx="${idx}" class="btn secondary viewDetails">View</button></div></div>`;
+      }).join('');
+      scoresList.querySelectorAll('.viewDetails').forEach(b=>b.addEventListener('click', ()=>{ const idx = Number(b.dataset.idx); const it = loadScores()[idx]; if(!it) return; showAttemptDetails(it); }));
+    }
+    clearScores.addEventListener('click', ()=>{ if(!confirm('Clear all stored scores?')) return; localStorage.removeItem(LS_S); renderScores(); });
+
+    function showAttemptDetails(it){ const details = it.details; resultArea.style.display='block'; resultArea.innerHTML = '<div class="card"><h3>Attempt Details</h3>' + details.map((d,i)=>{
+      return `<div style="margin-top:8px"><div><strong>Q${i+1}.</strong> ${escapeHtml(d.question)}</div>` + d.options.map((o,idx)=>{
+        const cls = idx===d.answer? 'correct' : (idx===d.selected && idx!==d.answer ? 'wrong' : '');
+        return `<div class="option ${cls}" style="margin-top:6px">${String.fromCharCode(65+idx)}. ${escapeHtml(o)}</div>`;
+      }).join('') + '</div>';
+    }).join('') + '<div style="margin-top:10px"><button id="closeAttempt" class="btn secondary">Close</button></div></div>';
+      document.getElementById('closeAttempt').addEventListener('click', ()=>{ resultArea.style.display='none'; }); }
+
+    // small helpers
+    function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]] } return a }
+
+    // initial render
+    renderQuestionList(); renderScores();
+
+    // Utilities: structuredClone polyfill for older browsers
+    function structuredClone(obj){ return JSON.parse(JSON.stringify(obj)); }
+
+    // make sure sections hidden except default
+    document.querySelectorAll('section.card').forEach(s=>s.style.display='none'); document.getElementById('take').style.display='block';
+  </script>
+</body>
+</html>
